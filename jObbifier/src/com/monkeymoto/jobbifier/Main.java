@@ -228,7 +228,7 @@ public class Main {
 				{
 					"-d", inputDir.getPath(),
 					"-o", outputDir.getPath() + File.separator + getOutputFileName(),
-					"-pn", lblPackageName.getText(),
+					"-pn", txtPackageName.getText(),
 					"-pv", spinner.getValue().toString(),
 					"-v"
 				};
