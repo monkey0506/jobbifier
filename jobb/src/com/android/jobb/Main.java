@@ -48,6 +48,7 @@ import java.util.Stack;
 public class Main {
 
     private static final int BLOCK_SIZE = 512; // MUST BE 512
+    private static final long MIN_FILE_SIZE = 4301312L;
 
     public static void printArgs() {
         System.out.println("Jobb -- Create OBB files for use on Android");
@@ -376,7 +377,8 @@ public class Main {
             final File f = new File(sDirectory);
             
             long fileSize = getTotalFileSize(f, 0);
-            fileSize = getTotalFileSize(f, BLOCK_SIZE*SuperFloppyFormatter.clusterSizeFromSize(fileSize, BLOCK_SIZE, FatType.FAT16));
+            fileSize = Math.max(MIN_FILE_SIZE, getTotalFileSize(f, BLOCK_SIZE *
+            		SuperFloppyFormatter.clusterSizeFromSize(Math.max(MIN_FILE_SIZE, fileSize), BLOCK_SIZE, FatType.FAT16)));
             if (fileSize >= 2147483648L) throw new UnsupportedOperationException("File size limit exceeded: " + fileSize);
             if (sVerboseMode) {
                 System.out.println("Total Files: " + fileSize);
