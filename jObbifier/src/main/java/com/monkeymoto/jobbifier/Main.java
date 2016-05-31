@@ -230,6 +230,7 @@ public class Main {
 					"-o", outputDir.getPath() + File.separator + getOutputFileName(),
 					"-pn", txtPackageName.getText(),
 					"-pv", spinner.getValue().toString(),
+					"-k", txtPackageName.getText(), // bogus key but ndk seems to be a dick
 					"-v"
 				};
 				com.android.jobb.Main.main(args);
