@@ -1,5 +1,27 @@
 apply plugin: 'java'
 
+version = "1.0"
+
+// Additional task that generates a runnable jar in addition to the dependency-style jar.
+//  Also makes it run by default, so that it gets generated even if the user wants to compile
+//  only jObbifier (elsewhere in this git repository, unless the repo has been split since.
+task jobbJar (type: Jar) {
+    dependsOn 'build', 'jar'
+    group 'build'
+    manifest {
+        attributes 'Main-Class': 'com.android.jobb.Main'
+    }
+    baseName = project.name + '-runnable'
+    from ( {configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }} ) {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/eclipse.inf"
+    }
+    with jar
+}
+jar.finalizedBy(jobbJar)
+
 dependencies {
     compile project(':libfat32')
 }
