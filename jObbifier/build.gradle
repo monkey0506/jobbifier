@@ -1,7 +1,14 @@
 apply plugin: 'java'
+version = "1.0"
 jar {
     manifest {
         attributes 'Main-Class': 'com.monkeymoto.jobbifier.Main'
+    }
+    from ( {configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }} ) {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/eclipse.inf"
     }
 }
 
