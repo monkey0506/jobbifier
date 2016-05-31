@@ -1,0 +1,12 @@
+apply plugin: 'java'
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.monkeymoto.jobbifier.Main'
+    }
+}
+
+dependencies {
+    compile project(':jobb')
+    //compile project(':libfat32')
+    compile fileTree(dir: 'libs', include: '*.jar')
+}

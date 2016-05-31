@@ -1,0 +1,6 @@
+sudo: false
+language: java
+jdk: oraclejdk7
+
+install:
+- ./gradlew clean :jObbifier:assemble

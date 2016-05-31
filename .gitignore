@@ -5,3 +5,7 @@
 *.class
 .classpath
 .project
+build/
+.gradle/
+*.iml
+.idea/
