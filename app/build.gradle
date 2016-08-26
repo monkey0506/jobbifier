@@ -1,0 +1,15 @@
+apply plugin: 'application'
+
+mainClassName = 'com.monkeymoto.jobbifier.Main'
+
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName,
+                'Class-Path': configurations.runtime.files.collect {"$it.name"}.join(' ')
+    }
+}
+
+dependencies {
+    compile project(':jobb')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
