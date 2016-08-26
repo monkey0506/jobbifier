@@ -43,6 +43,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JCheckBox;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import javax.swing.JMenuItem;
 
 public class Main {
 
@@ -64,6 +65,9 @@ public class Main {
 	private JButton btnCreateObb;
 	private JScrollPane scrollPane;
 	private JPasswordField pwdPassword;
+	private JTextField txtOutputFolder;
+	private JTextField txtInputFolder;
+	private JMenuItem mntmExit;
 
 	/**
 	 * Launch the application.
@@ -102,13 +106,48 @@ public class Main {
 	{
 		lblOutputFileName.setText(getOutputFileNamePrefix() + getOutputFileName());
 	}
+	
+	private File SanitizePath(File dir, JTextField textBox, boolean warn)
+	{
+		String path = textBox.getText();
+		if ((path != null) && (!path.equals("")))
+		{
+			File pathDir = new File(path);
+			if (pathDir.exists() && pathDir.isDirectory())
+			{
+				return pathDir;
+			}
+		}
+		if (dir == null)
+		{
+			dir = new File(".");
+		}
+		if (warn)
+		{
+			int result = JOptionPane.showConfirmDialog(frmJObbifier,
+					"Entered path ('" + path + "') is not a valid directory! Defaulting to '" +
+					dir.getAbsolutePath() + "' instead.", "Invalid path entered!", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (result == JOptionPane.CANCEL_OPTION)
+			{
+				return null;
+			}
+		}
+		textBox.setText(dir.getAbsolutePath());
+		return dir;
+	}
+	
+	private File SanitizePath(File dir, JTextField textBox)
+	{
+		return SanitizePath(dir, textBox, false);
+	}
 
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
 		frmJObbifier = new JFrame();
-		frmJObbifier.setBounds(100, 100, 640, 488);
+		frmJObbifier.setResizable(false);
+		frmJObbifier.setBounds(100, 100, 619, 488);
 		frmJObbifier.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmJObbifier.setTitle("jObbifier");
 		inputDir = null;
@@ -118,13 +157,24 @@ public class Main {
 		frmJObbifier.setJMenuBar(menuBar);
 
 		JMenu mnFile = new JMenu("File");
+		mnFile.setMnemonic('F');
 		menuBar.add(mnFile);
 		
-		lblInputFolder = new JLabel("Input folder: (None)");
+		mntmExit = new JMenuItem("Exit");
+		mntmExit.setMnemonic('x');
+		mntmExit.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				frmJObbifier.dispose();
+			}
+		});
+		mnFile.add(mntmExit);
+		
+		lblInputFolder = new JLabel("Input folder:");
 		
 		btnInputSelection = new JButton("...");
 		btnInputSelection.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				inputDir = SanitizePath(inputDir, txtInputFolder);
 				JFileChooser chooser = new JFileChooser();
 				chooser.setCurrentDirectory(new File(inputDir == null ? "." : inputDir.getPath()));
 				chooser.setDialogTitle("Select input folder...");
@@ -132,18 +182,19 @@ public class Main {
 				chooser.setAcceptAllFileFilterUsed(false);
 				if (chooser.showOpenDialog(frmJObbifier) == JFileChooser.APPROVE_OPTION) {
 					inputDir = chooser.getSelectedFile();
-					lblInputFolder.setText("Input folder: " + inputDir.getPath());
+					txtInputFolder.setText(inputDir.getAbsolutePath());
 				}
 			}
 		});
 		
-		lblOutputFolder = new JLabel("Output location: (None)");
+		lblOutputFolder = new JLabel("Output location:");
 		
 		btnOutputSelection = new JButton("...");
 		btnOutputSelection.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				outputDir = SanitizePath(outputDir, txtOutputFolder);
 				JFileChooser chooser = new JFileChooser();
 				chooser.setCurrentDirectory(new File(outputDir == null ? "." : outputDir.getPath()));
 				chooser.setDialogTitle("Select output folder...");
@@ -152,7 +203,7 @@ public class Main {
 				if (chooser.showOpenDialog(frmJObbifier) == JFileChooser.APPROVE_OPTION)
 				{
 					outputDir = chooser.getSelectedFile();
-					lblOutputFolder.setText("Output folder: " + outputDir.getPath());
+					txtOutputFolder.setText(outputDir.getAbsolutePath());
 				}
 			}
 		});
@@ -234,7 +285,7 @@ public class Main {
 			}
 		});
 		
-		JCheckBox chkUsePassword = new JCheckBox("Use password:");
+		JCheckBox chkUsePassword = new JCheckBox("Use password?");
 		chkUsePassword.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
@@ -253,7 +304,8 @@ public class Main {
 					chkUsePassword.setSelected(enabled);
 					chkUsePassword.addItemListener(this);
 				}
-				pwdPassword.setEnabled(enabled);
+				chkUsePassword.setText("Use password" + (enabled ? ":" : "?"));
+				pwdPassword.setVisible(enabled);
 				btnShowPassword.setVisible(enabled);
 			}
 		});
@@ -261,19 +313,13 @@ public class Main {
 		btnCreateObb = new JButton("Create OBB");
 		btnCreateObb.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (inputDir == null)
-				{
-					System.out.println("Error: You must select an input directory first!");
-					return;
-				}
-				if (outputDir == null)
-				{
-					System.out.println("Error: You must select an output directory first!");
-					return;
-				}
+				if ((inputDir = SanitizePath(inputDir, txtInputFolder, true)) == null) return;
+				if ((outputDir = SanitizePath(outputDir, txtOutputFolder, true)) == null) return;
 				if (inputDir == outputDir)
 				{
-					System.out.println("Error: Input and output directories cannot be the same.");
+					JOptionPane.showMessageDialog(frmJObbifier,
+							"Error: Input and output directories cannot be the same.",
+							"Error!", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 				List<String> args = new ArrayList<>(Arrays.asList(
@@ -317,67 +363,81 @@ public class Main {
 		scrollPane.setAutoscrolls(true);
 		
 		pwdPassword = new JPasswordField();
-		pwdPassword.setEnabled(false);
+		pwdPassword.setVisible(false);
 		pwdPassword.setColumns(10);
+		
+		txtOutputFolder = new JTextField();
+		txtOutputFolder.setColumns(10);
+		
+		txtInputFolder = new JTextField();
+		txtInputFolder.setColumns(10);
 		
 		GroupLayout groupLayout = new GroupLayout(frmJObbifier.getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 604, Short.MAX_VALUE)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnInputSelection)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(lblInputFolder))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnOutputSelection)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(lblOutputFolder))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnCreateObb)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(rdbtnMain)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(rdbtnPatch))
-						.addComponent(lblOutputFileName)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
-								.addGroup(groupLayout.createSequentialGroup()
-									.addComponent(lblPackageName)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, 251, GroupLayout.PREFERRED_SIZE))
-								.addGroup(groupLayout.createSequentialGroup()
-									.addComponent(chkUsePassword)
-									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(pwdPassword)))
+					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING, false)
+						.addComponent(scrollPane, Alignment.LEADING)
+						.addComponent(lblOutputFileName, Alignment.LEADING)
+						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+									.addGroup(groupLayout.createSequentialGroup()
+										.addComponent(lblOutputFolder)
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+											.addComponent(txtInputFolder, GroupLayout.DEFAULT_SIZE, 415, Short.MAX_VALUE)
+											.addComponent(txtOutputFolder)))
+									.addGroup(groupLayout.createSequentialGroup()
+										.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING, false)
+											.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+												.addComponent(chkUsePassword)
+												.addPreferredGap(ComponentPlacement.UNRELATED)
+												.addComponent(pwdPassword))
+											.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+												.addComponent(btnCreateObb)
+												.addPreferredGap(ComponentPlacement.UNRELATED)
+												.addComponent(rdbtnMain)
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addComponent(rdbtnPatch))
+											.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+												.addComponent(lblPackageName)
+												.addPreferredGap(ComponentPlacement.UNRELATED)
+												.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, 251, GroupLayout.PREFERRED_SIZE)))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+											.addGroup(groupLayout.createSequentialGroup()
+												.addComponent(lblPackageVersion)
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addComponent(spinner, GroupLayout.DEFAULT_SIZE, 73, Short.MAX_VALUE))
+											.addComponent(btnShowPassword))))
+								.addComponent(lblInputFolder))
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createSequentialGroup()
-									.addComponent(lblPackageVersion)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(spinner, GroupLayout.PREFERRED_SIZE, 77, GroupLayout.PREFERRED_SIZE))
-								.addComponent(btnShowPassword))))
-					.addContainerGap())
+								.addComponent(btnOutputSelection)
+								.addComponent(btnInputSelection))))
+					.addContainerGap(27, Short.MAX_VALUE))
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(btnInputSelection)
-						.addComponent(lblInputFolder))
+						.addComponent(lblInputFolder)
+						.addComponent(txtInputFolder, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnInputSelection))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(btnOutputSelection)
-						.addComponent(lblOutputFolder))
+						.addComponent(lblOutputFolder)
+						.addComponent(txtOutputFolder, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnOutputSelection))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblPackageName)
 						.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblPackageVersion)
-						.addComponent(spinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(spinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblPackageVersion))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(chkUsePassword)
@@ -391,7 +451,7 @@ public class Main {
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(lblOutputFileName)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 220, Short.MAX_VALUE)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 223, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		
