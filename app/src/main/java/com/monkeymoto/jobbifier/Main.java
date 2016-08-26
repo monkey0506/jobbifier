@@ -1,5 +1,6 @@
 package com.monkeymoto.jobbifier;
 
+import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -9,6 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 import javax.swing.ButtonGroup;
@@ -20,6 +24,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
@@ -34,6 +40,9 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.JScrollPane;
+import javax.swing.JCheckBox;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class Main {
 
@@ -54,6 +63,7 @@ public class Main {
 	private JButton btnOutputSelection;
 	private JButton btnCreateObb;
 	private JScrollPane scrollPane;
+	private JPasswordField pwdPassword;
 
 	/**
 	 * Launch the application.
@@ -98,7 +108,7 @@ public class Main {
 	 */
 	private void initialize() {
 		frmJObbifier = new JFrame();
-		frmJObbifier.setBounds(100, 100, 640, 360);
+		frmJObbifier.setBounds(100, 100, 640, 488);
 		frmJObbifier.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmJObbifier.setTitle("jObbifier");
 		inputDir = null;
@@ -207,6 +217,47 @@ public class Main {
 		lblOutputFileName = new JLabel();
 		updateOutputFileNameLabel();
 		
+		JButton btnShowPassword = new JButton("Show");
+		btnShowPassword.setVisible(false);
+		btnShowPassword.addMouseListener(new MouseAdapter() {
+			char passwordEchoChar;
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				passwordEchoChar = pwdPassword.getEchoChar();
+				pwdPassword.setEchoChar((char)0);
+			}
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				pwdPassword.setEchoChar(passwordEchoChar);
+			}
+		});
+		
+		JCheckBox chkUsePassword = new JCheckBox("Use password:");
+		chkUsePassword.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				boolean enabled = e.getStateChange() == ItemEvent.SELECTED;
+				if (enabled)
+				{
+					int result = JOptionPane.showConfirmDialog(frmJObbifier,
+							"Warning! Encrypted OBB files may not work with all versions of Android. Do you wish to continue?",
+							"Use password?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+					if (result != JOptionPane.YES_OPTION)
+					{
+						enabled = false;
+					}
+					// TODO: why is this being unchecked when the dialog is shown??
+					chkUsePassword.removeItemListener(this);
+					chkUsePassword.setSelected(enabled);
+					chkUsePassword.addItemListener(this);
+				}
+				pwdPassword.setEnabled(enabled);
+				btnShowPassword.setVisible(enabled);
+			}
+		});
+		
 		btnCreateObb = new JButton("Create OBB");
 		btnCreateObb.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -225,21 +276,38 @@ public class Main {
 					System.out.println("Error: Input and output directories cannot be the same.");
 					return;
 				}
-				String[] args = new String[]
+				List<String> args = new ArrayList<>(Arrays.asList(
+				new String[]
 				{
 					"-d", inputDir.getPath(),
 					"-o", outputDir.getPath() + File.separator + getOutputFileName(),
 					"-pn", txtPackageName.getText(),
 					"-pv", spinner.getValue().toString(),
 					"-v"
-				};
+				}));
+				if (chkUsePassword.isSelected())
+				{
+					char[] pwdChars = pwdPassword.getPassword();
+					if (pwdChars != null)
+					{
+						if (pwdChars.length != 0)
+						{
+							args.add("-k");
+							args.add(new String(pwdChars));
+						}
+						for (int i = 0; i < pwdChars.length; ++i)
+						{
+							pwdChars[i] = (char)0;
+						}
+					}
+				}
 				Executors.newSingleThreadExecutor().execute(new Runnable()
 				{
 					@Override
 					public void run()
 					{
 						// run the jobb code in a separate thread so program doesn't hang
-						com.android.jobb.Main.main(args);
+						com.android.jobb.Main.main(args.toArray(new String[0]));
 					}
 				});
 			}
@@ -247,73 +315,83 @@ public class Main {
 		
 		scrollPane = new JScrollPane();
 		scrollPane.setAutoscrolls(true);
+		
+		pwdPassword = new JPasswordField();
+		pwdPassword.setEnabled(false);
+		pwdPassword.setColumns(10);
+		
 		GroupLayout groupLayout = new GroupLayout(frmJObbifier.getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(7)
+					.addContainerGap()
 					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 604, Short.MAX_VALUE)
 						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 605, Short.MAX_VALUE)
-							.addContainerGap())
+							.addComponent(btnInputSelection)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(lblInputFolder))
 						.addGroup(groupLayout.createSequentialGroup()
-							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createSequentialGroup()
-									.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-										.addComponent(btnInputSelection)
-										.addComponent(btnOutputSelection))
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-										.addComponent(lblOutputFolder)
-										.addComponent(lblInputFolder)))
-								.addGroup(groupLayout.createSequentialGroup()
-									.addComponent(lblPackageName)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, 251, GroupLayout.PREFERRED_SIZE)
-									.addGap(12)
-									.addComponent(lblPackageVersion)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(spinner, GroupLayout.PREFERRED_SIZE, 77, GroupLayout.PREFERRED_SIZE)))
-							.addContainerGap(67, Short.MAX_VALUE))
+							.addComponent(btnOutputSelection)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(lblOutputFolder))
 						.addGroup(groupLayout.createSequentialGroup()
 							.addComponent(btnCreateObb)
 							.addPreferredGap(ComponentPlacement.UNRELATED)
 							.addComponent(rdbtnMain)
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(rdbtnPatch)
+							.addComponent(rdbtnPatch))
+						.addComponent(lblOutputFileName)
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
+								.addGroup(groupLayout.createSequentialGroup()
+									.addComponent(lblPackageName)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, 251, GroupLayout.PREFERRED_SIZE))
+								.addGroup(groupLayout.createSequentialGroup()
+									.addComponent(chkUsePassword)
+									.addPreferredGap(ComponentPlacement.UNRELATED)
+									.addComponent(pwdPassword)))
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(lblOutputFileName)
-							.addContainerGap())))
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addGroup(groupLayout.createSequentialGroup()
+									.addComponent(lblPackageVersion)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addComponent(spinner, GroupLayout.PREFERRED_SIZE, 77, GroupLayout.PREFERRED_SIZE))
+								.addComponent(btnShowPassword))))
+					.addContainerGap())
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(11)
+					.addContainerGap()
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(btnInputSelection)
 						.addComponent(lblInputFolder))
-					.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(btnOutputSelection)
 						.addComponent(lblOutputFolder))
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGap(12)
-							.addComponent(lblPackageName))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGap(9)
-							.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-								.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblPackageVersion)
-								.addComponent(spinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))
-					.addPreferredGap(ComponentPlacement.RELATED)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblPackageName)
+						.addComponent(txtPackageName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblPackageVersion)
+						.addComponent(spinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(chkUsePassword)
+						.addComponent(pwdPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnShowPassword))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(btnCreateObb)
 						.addComponent(rdbtnMain)
-						.addComponent(rdbtnPatch)
-						.addComponent(lblOutputFileName))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
+						.addComponent(rdbtnPatch))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(lblOutputFileName)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 220, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		
