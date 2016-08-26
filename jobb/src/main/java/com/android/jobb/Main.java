@@ -130,7 +130,7 @@ public class Main {
                             FileChannel outputChannel = fos.getChannel();
                             int capacity = sTempBuf.capacity();
                             long length = f.getLength();
-                            for ( long pos = 0; pos < length; pos++ ) {
+                            for ( long pos = 0; pos < length; ) {
                                 int readLength = (int)(length-pos > capacity ? capacity : length-pos);
                                 sTempBuf.rewind();
                                 sTempBuf.limit(readLength);
@@ -351,6 +351,29 @@ public class Main {
                     e.printStackTrace();
                     return;
                 }
+
+                boolean bFindRightKey = false;
+
+                do {
+                    if (null == sSalt) {
+                        sSalt = PBKDF.getRandomSalt();
+                    }
+                    try {
+                        sFishKey = PBKDF.getKey(sKey, sSalt);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return;
+                    }
+
+                    BigInteger bi = new BigInteger(sFishKey);
+                    String hashedKey = bi.toString(16);
+                    String  pbkdfKeyString = PBKDF.bytesToHexString(sFishKey);
+                    if (!hashedKey.equals(pbkdfKeyString)){
+                        sSalt = PBKDF.getRandomSalt();
+                    } else {
+                        bFindRightKey = true;
+                    }
+                } while (!bFindRightKey);
                 sFlags |= ObbFile.OBB_SALTED;
                 if (sVerboseMode) {
                     System.out.println("Crypto: ");
