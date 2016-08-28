@@ -1,0 +1,22 @@
+---
+language: java
+script: ./gradlew clean :jObbifier:assemble
+
+os:
+    - linux
+
+jdk:
+    - oraclejdk8
+
+sudo: false
+deploy:
+  provider: releases
+  api_key: "${TRAVIS_TOKEN}"
+  file: "jObbifier/build/libs/jObbifier.jar"
+  skip_cleanup: true
+  on:
+    tags: true
+
+notifications:
+    email:
+        - root@cybikbase.com

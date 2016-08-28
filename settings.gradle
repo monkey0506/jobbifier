@@ -1,1 +1,1 @@
-include ':libfat32', ':jobb', ':app', ':app'
+include ':libfat32', ':jobb', ':jObbifier'
