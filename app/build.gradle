@@ -1,16 +1,18 @@
 apply plugin: 'application'
 
+dependencies {
+    compile project(':jobb')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
 mainClassName = 'com.monkeymoto.jobbifier.Main'
 archivesBaseName = 'jObbifier'
 
 jar {
     manifest {
-        attributes 'Main-Class': mainClassName,
-                'Class-Path': configurations.runtime.files.collect {"$it.name"}.join(' ')
+        attributes 'Main-Class': mainClassName
     }
-}
-
-dependencies {
-    compile project(':jobb')
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    from configurations.compile.files.collect {
+        zipTree(it)
+    }
 }
