@@ -268,7 +268,7 @@ public class Main {
 		lblOutputFileName = new JLabel();
 		updateOutputFileNameLabel();
 		
-		JButton btnShowPassword = new JButton("Show");
+		final JButton btnShowPassword = new JButton("Show");
 		btnShowPassword.setVisible(false);
 		btnShowPassword.addMouseListener(new MouseAdapter() {
 			char passwordEchoChar;
@@ -285,7 +285,7 @@ public class Main {
 			}
 		});
 		
-		JCheckBox chkUsePassword = new JCheckBox("Use password?");
+		final JCheckBox chkUsePassword = new JCheckBox("Use password?");
 		chkUsePassword.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
@@ -322,7 +322,7 @@ public class Main {
 							"Error!", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
-				List<String> args = new ArrayList<>(Arrays.asList(
+				final List<String> args = new ArrayList<>(Arrays.asList(
 				new String[]
 				{
 					"-d", inputDir.getPath(),
