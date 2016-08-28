@@ -10,7 +10,9 @@ deploy:
   skip_cleanup: true
   api_key:
     secure: oeUsSyu7l8HpLfkRqhzqQbGivnhIhBT3AL3szuRn8wYMzaSrIA63AFDU7MHpKwE6I0nPrNsquOwldPYhU+DcDmj2H/ylbBo6c3dikiX7G1pRpxhEdnYZwnKOAJs8reqeR0vsr7T5Mg72t84M5vbaKhzHay/9+VXe041Wb2C8x+Nenkuztz4Sn8tQFTCHVAy6vi2/yzg+z//sYJwKKLev2wxPtW3XXD49EZTz47AOTs0+Ngn+SHo0kLr94s4PlWOu7K9E6pd85/fEs8LeJRaZjwA5vOt/lSA6RgRPOASHP/hn5Ya8cdIEhMRhl+eUkNRzgxlmQV61fVsg5SsZhzmtiVX4BoiQddWmUOOcWIbxgkQoYBqt0J1XK3TSGsr5zUYND0/+EQXxXm/2v1CvJi+4pIFX/RktrQcYPMP4WIXgtDvAqySC0KtkeFdcJu8JZbwfPQsShCoo26XgdopSTONrxeQBN6GQFpRO9NHXS5X3brYpo39iF0f+WJMDSGmXjmodMStL7rJxDUsqb4p2zQy632RTaSxeibDyNYhJubz/1R04CK7avVLbu34ksLmaWizi7K7usX1xBXDmp4XyAscr3hrOVdNnRX5cLy/WYsC3kz2o5htEcB76+FmRLahl+uFkSq4BsCaoUHTrV2Z8fpWM0z2Pk5l7wYzQYlcNQSWef38=
-  file: app/build/libs/jObbifier.jar
+  file:
+    - app/build/libs/jObbifier.jar
+    - jobb/build/libs/jobb.jar
   on:
     repo: monkey0506/jobbifier
 notifications:
