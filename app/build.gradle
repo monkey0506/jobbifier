@@ -1,6 +1,7 @@
 apply plugin: 'application'
 
 mainClassName = 'com.monkeymoto.jobbifier.Main'
+archivesBaseName = 'jObbifier'
 
 jar {
     manifest {
