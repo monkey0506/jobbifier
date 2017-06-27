@@ -289,11 +289,7 @@ public class EncryptedBlockFile extends RandomAccessFile {
                     decryptBuf[j] ^= bufLast[j];
                 }
                 System.arraycopy(buf, 0, bufLast, 0, blockSize);
-                if (decryptBuf.length > dest.remaining()) {
-                    dest.put(decryptBuf, 0, dest.remaining());
-                } else {
-                    dest.put(decryptBuf);
-                }
+                dest.put(decryptBuf);
             }
         }
         

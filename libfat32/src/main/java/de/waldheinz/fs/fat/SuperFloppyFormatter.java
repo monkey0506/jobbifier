@@ -90,14 +90,6 @@ public final class SuperFloppyFormatter {
     private int sectorsPerCluster;
     private int reservedSectors;
     private int fatCount;
-    
-    private SuperFloppyFormatter(BlockDevice device, FatType fatType) throws IOException
-    {
-    	this.device = device;
-    	this.oemName = DEFAULT_OEM_NAME;
-    	this.fatCount = DEFAULT_FAT_COUNT;
-    	setFatType(fatType);
-    }
 
     /**
      * Creates a new {@code SuperFloppyFormatter} for the specified
@@ -123,11 +115,6 @@ public final class SuperFloppyFormatter {
      */
     public static SuperFloppyFormatter get(BlockDevice dev) throws IOException {
         return new SuperFloppyFormatter(dev);
-    }
-    
-    public static SuperFloppyFormatter get(BlockDevice device, FatType fatType) throws IOException
-    {
-    	return new SuperFloppyFormatter(device, fatType);
     }
     
     /**
@@ -317,20 +304,13 @@ public final class SuperFloppyFormatter {
      */
     public static FatType fatTypeFromSize(long sizeInBytes) {
         final long sizeInMb = sizeInBytes / (1024 * 1024);
-        final long sizeInGb = sizeInMb / 1024;
-        if (sizeInMb < 16) return FatType.FAT12;
-        if (sizeInGb < 2) return FatType.FAT16;
-        else return FatType.FAT32;
+        if (sizeInMb < 4) return FatType.FAT12;
+        else if (sizeInMb < 512) return FatType.FAT16;
+        else return FatType.FAT32;    	
     }
     
-    public static int clusterSizeFromSize(long sizeInBytes, int sectorSize) {
-        return clusterSizeFromSize(sizeInBytes, sectorSize, fatTypeFromSize(sizeInBytes));
-    }
-    
-    public static int clusterSizeFromSize(long sizeInBytes, int sectorSize, FatType fatType)
-    {
-    	switch (fatType)
-    	{
+    public static int clusterSizeFromSize(long sizeInBytes, int sectorSize){
+    	switch(fatTypeFromSize(sizeInBytes)) {
         case FAT12:
             return sectorsPerCluster12(sizeInBytes, sectorSize);
         case FAT16:

@@ -48,7 +48,6 @@ import java.util.Stack;
 public class Main {
 
     private static final int BLOCK_SIZE = 512; // MUST BE 512
-    private static final long MIN_FILE_SIZE = 4301312L;
 
     public static void printArgs() {
         System.out.println("Jobb -- Create OBB files for use on Android");
@@ -131,7 +130,7 @@ public class Main {
                             FileChannel outputChannel = fos.getChannel();
                             int capacity = sTempBuf.capacity();
                             long length = f.getLength();
-                            for ( long pos = 0; pos < length; ) {
+                            for ( long pos = 0; pos < length; pos++ ) {
                                 int readLength = (int)(length-pos > capacity ? capacity : length-pos);
                                 sTempBuf.rewind();
                                 sTempBuf.limit(readLength);
@@ -352,29 +351,6 @@ public class Main {
                     e.printStackTrace();
                     return;
                 }
-
-                boolean bFindRightKey = false;
-
-                do {
-                    if (null == sSalt) {
-                        sSalt = PBKDF.getRandomSalt();
-                    }
-                    try {
-                        sFishKey = PBKDF.getKey(sKey, sSalt);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return;
-                    }
-
-                    BigInteger bi = new BigInteger(sFishKey);
-                    String hashedKey = bi.toString(16);
-                    String  pbkdfKeyString = PBKDF.bytesToHexString(sFishKey);
-                    if (!hashedKey.equals(pbkdfKeyString)){
-                        sSalt = PBKDF.getRandomSalt();
-                    } else {
-                        bFindRightKey = true;
-                    }
-                } while (!bFindRightKey);
                 sFlags |= ObbFile.OBB_SALTED;
                 if (sVerboseMode) {
                     System.out.println("Crypto: ");
@@ -400,14 +376,12 @@ public class Main {
             final File f = new File(sDirectory);
             
             long fileSize = getTotalFileSize(f, 0);
-            fileSize = Math.max(MIN_FILE_SIZE, getTotalFileSize(f, BLOCK_SIZE *
-                    SuperFloppyFormatter.clusterSizeFromSize(Math.max(MIN_FILE_SIZE, fileSize), BLOCK_SIZE, FatType.FAT16)));
-            if (fileSize > Integer.MAX_VALUE) throw new UnsupportedOperationException("File size limit exceeded: " + fileSize);
+            fileSize = getTotalFileSize(f, BLOCK_SIZE*SuperFloppyFormatter.clusterSizeFromSize(fileSize, BLOCK_SIZE));
             if (sVerboseMode) {
                 System.out.println("Total Files: " + fileSize);
             }
             long numSectors = fileSize / BLOCK_SIZE;
-            long clusterSize = SuperFloppyFormatter.clusterSizeFromSize(fileSize, BLOCK_SIZE, FatType.FAT16);
+            long clusterSize = SuperFloppyFormatter.clusterSizeFromSize(fileSize, BLOCK_SIZE);
             long fatOverhead = 2*numSectors/clusterSize*4;
             fatOverhead += clusterSize*BLOCK_SIZE - fatOverhead % (clusterSize*BLOCK_SIZE);
             fatOverhead += 2*clusterSize; //start at second cluster
@@ -437,7 +411,7 @@ public class Main {
                     fd = FileDisk.create(fsFile, filesystemSize);
                 }
                 // fat type set based on device size by SuperFloppyFormatter
-                final FatFileSystem fs = SuperFloppyFormatter.get(fd, FatType.FAT16).format();
+                final FatFileSystem fs = SuperFloppyFormatter.get(fd).format();
                 final String rootPath = f.getAbsolutePath();
                 // add the files into the filesystem
                 processAllFiles(f, new FileProcessor() {
@@ -558,7 +532,6 @@ public class Main {
                     System.out.println("" + fs.getTotalSpace() + " bytes total");
                     System.out.println("" + fs.getFreeSpace() + " bytes free");
                 }
-                fd.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

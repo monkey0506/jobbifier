@@ -21,7 +21,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Formatter;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.interfaces.PBEKey;
@@ -31,16 +30,6 @@ public class PBKDF {
     public static final int SALT_LEN = 8;
     private static final int ROUNDS = 1024;
     private static final int KEY_BITS = 128;
-
-    public static String bytesToHexString(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        Formatter formatter = new Formatter(sb);
-        for (byte b : bytes) {
-            formatter.format("%02x", b);
-        }
-
-        return sb.toString();
-    }
     
     public static byte[] getKey(String password, byte[] saltBytes) throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException {
         PBEKeySpec pwKey = new PBEKeySpec(password.toCharArray(), saltBytes, ROUNDS, KEY_BITS);  
